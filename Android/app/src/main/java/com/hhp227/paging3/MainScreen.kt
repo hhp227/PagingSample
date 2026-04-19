@@ -30,8 +30,6 @@ import com.hhp227.paging3.paging.LoadState
 import com.hhp227.paging3.paging.collectAsLazyPagingItems
 import com.hhp227.paging3.paging.items
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onStart
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,10 +47,7 @@ fun MainScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(top = paddingValues.calculateTopPadding()),
-                lazyPagingItems = viewModel.state.map { it.pagingData }
-                    .onStart { Log.e("IDIS_TEST", "state pagingData onStart") }
-                    .onCompletion { Log.e("IDIS_TEST", "state pagingData onCompletion") }
-                    .collectAsLazyPagingItems(),
+                lazyPagingItems = viewModel.state.map { it.pagingData }.collectAsLazyPagingItems(),
                 onItemClick = viewModel::onItemClick
             )
         }

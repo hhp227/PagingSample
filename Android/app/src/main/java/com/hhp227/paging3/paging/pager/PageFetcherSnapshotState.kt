@@ -1,6 +1,5 @@
 package com.hhp227.paging3.paging.pager
 
-import android.util.Log
 import androidx.annotation.CheckResult
 import com.hhp227.paging3.paging.*
 import com.hhp227.paging3.paging.PageEvent.Insert.Companion.Append

@@ -10,7 +10,7 @@ private inline fun <T : Any, R : Any> PagingData<T>.transform(
     crossinline transform: suspend (PageEvent<T>) -> PageEvent<R>
 ): PagingData<R> {
     return PagingData(
-        flow = flow.map { Log.e("IDIS_TEST", "transform map: $it");transform(it) },
+        flow = flow.map { Log.e("IDIS_TEST", "map: $it");transform(it) },
         receiver = receiver,
         hintReceiver = hintReceiver
     )

@@ -9,7 +9,6 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.onStart
 
 class LazyPagingItems<T : Any> internal constructor(
     private val flow: Flow<PagingData<T>>
@@ -64,7 +63,7 @@ class LazyPagingItems<T : Any> internal constructor(
     }
 
     internal suspend fun collectPagingData() {
-        flow.onStart { Log.e("IDIS_TEST", "TEST3") }.collectLatest(pagingDataDiffer::collectFrom)
+        flow.collectLatest(pagingDataDiffer::collectFrom)
     }
 
     override fun onChanged(position: Int, count: Int) {

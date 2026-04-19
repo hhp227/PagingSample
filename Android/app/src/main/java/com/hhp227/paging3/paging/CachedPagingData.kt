@@ -20,15 +20,11 @@ private class MulticastedPagingData<T : Any>(
     }
 
     fun asPagingData() = PagingData(
-        flow = accumulated.downstreamFlow
-            .onStart {
-                Log.e("IDIS_TEST", "asPagingData onStart")
-                tracker?.onStart(ActiveFlowTracker.FlowType.PAGE_EVENT_FLOW)
-            }
-            .onCompletion {
-                Log.e("IDIS_TEST", "asPagingData onCompletion") // 3
-                tracker?.onComplete(ActiveFlowTracker.FlowType.PAGE_EVENT_FLOW)
-            },
+        flow = accumulated.downstreamFlow.onStart {
+            tracker?.onStart(ActiveFlowTracker.FlowType.PAGE_EVENT_FLOW)
+        }.onCompletion {
+            tracker?.onComplete(ActiveFlowTracker.FlowType.PAGE_EVENT_FLOW)
+        },
         receiver = parent.receiver,
         hintReceiver = parent.hintReceiver
     )

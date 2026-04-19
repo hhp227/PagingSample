@@ -10,10 +10,13 @@ import com.hhp227.paging3.paging.extension.PagingConfig
 import com.hhp227.paging3.paging.extension.PagingSource
 import com.hhp227.paging3.paging.extension.PagingState
 import com.hhp227.paging3.paging.extension.RemoteMediatorConnection
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
 // 조금 더 봐야함 일단 패스 에러의 핵심??
@@ -33,91 +36,11 @@ internal class PageFetcherSnapshot<Key : Any, Value : Any>(
     private val pageEventCh = Channel<PageEvent<Value>>(Channel.BUFFERED)
     private val stateHolder = PageFetcherSnapshotState.Holder<Key, Value>(config = config)
 
-    // 아래는 gpt가 추천해준 코드1
-
     private val pageEventChannelFlowJob = Job()
-
-    // 임시
-    val pageEventFlow: Flow<PageEvent<Value>> = flow {
-        check(pageEventChCollected.compareAndSet(false, true)) {
-            "Attempt to collect twice from pageEventFlow, which is an illegal operation. Did you " +
-                    "forget to call Flow<PagingData<*>>.cachedIn(coroutineScope)?"
-        }
-
-        /*remoteMediatorConnection?.let {
-            val pagingState = previousPagingState ?: stateHolder.withLock { state ->
-                state.currentPagingState(null)
-            }
-            it.requestRefreshIfAllowed(pagingState)
-        }*/
-
-        doInitialLoad()
-        if (stateHolder.withLock { state -> state.sourceLoadStates.get(LoadType.REFRESH) } !is LoadState.Error) {
-            startConsumingHints()
-        }
-        pageEvent.collect {
-            try {
-                if (it !is PageEvent.StaticList<Value>)
-                    emit(it)
-            } catch (e: ClosedSendChannelException) {
-            }
-        }
-    }
-
-    /*val pageEventFlow: Flow<PageEvent<Value>> = flow {
-        check(pageEventChCollected.compareAndSet(false, true)) {
-            "Attempt to collect twice from pageEventFlow, which is an illegal operation. Did you " +
-                    "forget to call Flow<PagingData<*>>.cachedIn(coroutineScope)?"
-        }
-
-        /*remoteMediatorConnection?.let {
-            val pagingState = previousPagingState ?: stateHolder.withLock { state ->
-                state.currentPagingState(null)
-            }
-            it.requestRefreshIfAllowed(pagingState)
-        }*/
-
-        doInitialLoad()
-
-        if (stateHolder.withLock { state -> state.sourceLoadStates.get(LoadType.REFRESH) } !is LoadState.Error) {
-            startConsumingHints()
-        }
-
-        // 감시작업을 coroutineScope 내에서 실행
-        coroutineScope {
-            val pageEventChannel = Channel<PageEvent<Value>>(Channel.RENDEZVOUS)
-
-            // Job이 완료되면 채널을 닫음
-            pageEventChannelFlowJob.invokeOnCompletion {
-                pageEventChannel.close()
-            }
-
-            launch {
-                pageEvent.collect {
-                    try {
-                        if (it !is PageEvent.StaticList<Value>)
-                            pageEventChannel.send(it)
-                    } catch (e: ClosedSendChannelException) {
-                    }
-                }
-            }
-
-            for (event in pageEventChannel) {
-                emit(event)
-            }
-        }
-    }.onStart {
-        emit(PageEvent.LoadStateUpdate(stateHolder.withLock { it.sourceLoadStates.snapshot() }))
-    }*/
-
-    // 아래는 원본에 가까운 코드
-
-    /*private val pageEventChannelFlowJob = Job()
 
     val pageEventFlow: Flow<PageEvent<Value>> = cancelableChannelFlow<PageEvent<Value>>(
         pageEventChannelFlowJob
     ) {
-        Log.e("IDIS_TEST", "CHECK $pageEventChCollected")
         check(pageEventChCollected.compareAndSet(false, true)) {
             "Attempt to collect twice from pageEventFlow, which is an illegal operation. Did you " +
                     "forget to call Flow<PagingData<*>>.cachedIn(coroutineScope)?"
@@ -145,14 +68,13 @@ internal class PageFetcherSnapshot<Key : Any, Value : Any>(
         }
     }.onStart {
         emit(PageEvent.LoadStateUpdate(stateHolder.withLock { it.sourceLoadStates.snapshot() }))
-    }*/
+    }
 
     fun accessHint(viewportHint: ViewportHint) {
         hintHandler.processHint(viewportHint)
     }
 
     fun close() {
-        Log.e("IDIS_TEST", "close")
         pageEventChannelFlowJob.cancel()
     }
 

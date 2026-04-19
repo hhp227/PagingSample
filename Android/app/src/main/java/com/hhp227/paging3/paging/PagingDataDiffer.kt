@@ -2,7 +2,9 @@ package com.hhp227.paging3.paging
 
 import android.util.Log
 import androidx.annotation.IntRange
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
 
 class PagingDataDiffer<T : Any>(
     private val differCallback: DifferCallback,
@@ -43,10 +45,7 @@ class PagingDataDiffer<T : Any>(
         Log.e("IDIS_TEST", "collectFrom")
         receiver = pagingData.receiver
 
-        pagingData.flow
-            .onStart { Log.e("IDIS_TEST", "PAGINGDATA_ONSTART") }
-            .onCompletion { Log.e("IDIS_TEST", "PAGINGDATA_ONCOMPLETION") } // 4
-            .collect { event ->
+        pagingData.flow.collect { event ->
             Log.e("TEST", "event: $event")
             if (event is PageEvent.Insert && event.loadType == LoadType.REFRESH) {
                 presentNewList(

@@ -2,14 +2,14 @@ package com.hhp227.paging3.paging
 
 import android.util.Log
 import androidx.annotation.VisibleForTesting
-import androidx.compose.foundation.text.selection.DisableSelection
 import com.hhp227.paging3.paging.pager.ConflatedEventBus
 import com.hhp227.paging3.paging.pager.MutableLoadStateCollection
-import com.hhp227.paging3.paging.pager.cancelableChannelFlow
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -37,23 +37,22 @@ internal class CachedPageEventFlow<T : Any>(
      * the upstream.
      */
     private val sharedForDownstream: Flow<IndexedValue<PageEvent<T>>?> get() {
+        Log.e("IDIS_TEST", "getSharedForDownstream")
         return mutableSharedSrc.onSubscription {
             val history = pageController.getStateAsEvents()
             Log.e("IDIS_TEST", "history: $history")
             // start the job if it has not started yet. We do this after capturing the history so that
             // the first subscriber does not receive any history.
             job.start()
-            /*history.forEach {
+            history.forEach {
                 emit(it)
-            }*/
-        }
-            .onCompletion { Log.e("IDIS_TEST", "sharedForDownstream onCompletion") } // 1
+            }
+        }.onCompletion { Log.e("IDIS_TEST", "onCompletion22") }
     }
 
     /**
      * The actual job that collects the upstream.
      */
-
     private val job = scope.launch(start = CoroutineStart.LAZY) {
         src.withIndex()
             .collect {
@@ -74,12 +73,15 @@ internal class CachedPageEventFlow<T : Any>(
     }
 
     val downstreamFlow: Flow<PageEvent<T>> get() {
-        return flow<PageEvent<T>> {
-            var maxEventIndex = Int.MIN_VALUE
+        return flow {
+            // track max event index we've seen to avoid race condition between history and the shared
+            // stream
+            var maxEventIndex = Integer.MIN_VALUE
             sharedForDownstream
-                .takeWhile { it != null }
-                .onStart { Log.e("IDIS_TEST", "sharedForDownstream onStart") }
-                .onCompletion { Log.e("IDIS_TEST", "sharedForDownstream onCompletion") }
+                .takeWhile {
+                    // shared flow cannot finish hence we have a special marker to finish it
+                    it != null
+                }
                 .collect { indexedValue ->
                     Log.e("IDIS_TEST", "test1 maxEventIndex: $maxEventIndex, indexedValue: index=${indexedValue?.index} value=${indexedValue?.value}")
                     // we take until null so this cannot be null
@@ -90,8 +92,6 @@ internal class CachedPageEventFlow<T : Any>(
                     }
                 }
         }
-            .onStart { Log.e("IDIS_TEST", "downstreamFlow onStart") }
-            .onCompletion { Log.e("IDIS_TEST", "downstreamFlow onCompletion") } // 2
     }
 
     /*val downstreamFlow = object : Flow<PageEvent<T>> {
