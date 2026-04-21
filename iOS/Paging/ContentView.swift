@@ -23,15 +23,27 @@ struct ContentView: View {
 }
 
 struct MovieList: View {
-    @StateObject var lazyPagingItems: LazyPagingItems<Movie>
+    @ObservedObject var lazyPagingItems: LazyPagingItems<Movie>
 
     let onItemClick: (Movie?) -> Void
+    
+    private var rows: [MovieRow] {
+        (0..<lazyPagingItems.itemCount).map { index in
+            MovieRow(
+                index: index,
+                id: lazyPagingItems.peek(index)?.id ?? -index - 1
+            )
+        }
+    }
 
     var body: some View {
         ScrollView {
             LazyVStack {
-                ForEach(lazyPagingItems) { movie in
-                    MovieItem(movie: movie, onItemClick: onItemClick)
+                ForEach(rows) { row in
+                    MovieItem(
+                        movie: lazyPagingItems.get(row.index),
+                        onItemClick: onItemClick
+                    )
                 }
                 HStack {
                     if lazyPagingItems.loadState.refresh is LoadState.Loading {
@@ -48,6 +60,11 @@ struct MovieList: View {
         }
         .refreshable(action: lazyPagingItems.refresh)
     }
+}
+
+private struct MovieRow: Identifiable {
+    let index: Int
+    let id: Int
 }
 
 struct MovieItem: View {
