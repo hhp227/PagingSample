@@ -13,10 +13,6 @@ class ContentViewModel: ObservableObject {
     static let API_KEY = "a86526535fa0fc12d269041691633aed"
 
     let repository: ContentRepository
-    
-    lazy var pagingDataPublisher: AnyPublisher<PagingData<Movie>, Never> = $state
-        .map(\.pagingData)
-        .eraseToAnyPublisher()
 
     lazy var movies: AnyPublisher<PagingData<Movie>, Never> = Pager(PagingConfig(pageSize: 10)) {
         ContentPagingSource(self.repository, ContentViewModel.API_KEY)

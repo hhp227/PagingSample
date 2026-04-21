@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Combine
 
 struct ContentView: View {
     @StateObject var viewModel = ContentViewModel(.init(MovieApi.create()))
@@ -14,7 +13,7 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             MovieList(
-                pagingDataPublisher: viewModel.pagingDataPublisher,
+                lazyPagingItems: viewModel.$state.map { $0.pagingData }.collectAsLazyPagingItems(),
                 onItemClick: viewModel.onItemClick
             )
             .navigationBarTitleDisplayMode(.inline)
@@ -24,23 +23,15 @@ struct ContentView: View {
 }
 
 struct MovieList: View {
-    @StateObject private var lazyPagingItems: LazyPagingItems<Movie>
+    @StateObject var lazyPagingItems: LazyPagingItems<Movie>
 
     let onItemClick: (Movie?) -> Void
-    
-    init(
-        pagingDataPublisher: AnyPublisher<PagingData<Movie>, Never>,
-        onItemClick: @escaping (Movie?) -> Void
-    ) {
-        _lazyPagingItems = StateObject(wrappedValue: LazyPagingItems(pagingDataPublisher))
-        self.onItemClick = onItemClick
-    }
 
     var body: some View {
         ScrollView {
             LazyVStack {
-                ForEach(0..<lazyPagingItems.itemCount, id: \.self) { index in
-                    MovieItem(movie: lazyPagingItems.get(index), onItemClick: onItemClick)
+                ForEach(lazyPagingItems) { movie in
+                    MovieItem(movie: movie, onItemClick: onItemClick)
                 }
                 HStack {
                     if lazyPagingItems.loadState.refresh is LoadState.Loading {
@@ -56,9 +47,6 @@ struct MovieList: View {
             }
         }
         .refreshable(action: lazyPagingItems.refresh)
-        .task {
-            lazyPagingItems.startCollecting()
-        }
     }
 }
 
@@ -81,10 +69,9 @@ struct MovieTitle: View {
     let onItemClick: () -> Void
 
     var body: some View {
-        Text(title)
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
-            .onTapGesture(perform: onItemClick)
+        VStack {
+            Button(action: onItemClick, label: { Text(title) })
+        }
     }
 }
 
