@@ -26,13 +26,13 @@ internal class CachedPageEventPublisher<T: Any> {
     
     private func getSharedForDownstream() -> AnyPublisher<EnumeratedSequence<[PageEvent<T>]>.Element?, Never> {
         print("getSharedForDownstream")
-        return mutableSharedSrc
-            .handleEvents(receiveSubscription: { _ in
-                let history = self.pageController.getStateAsEvents()
-                print("history: \(history)")
-                self.job.store(in: &self.cancellables)
-                history.forEach { self.mutableSharedSrc.send($0) }
-            }, receiveCompletion: { print("onCompletion \($0)") }) // 여기서 이게 호출되지 않음
+        let history = self.pageController.getStateAsEvents()
+        print("history: \(history)")
+        self.job.store(in: &self.cancellables)
+        
+        return history.publisher
+            .map { Optional($0) }
+            .append(mutableSharedSrc)
             .eraseToAnyPublisher()
     }
 
@@ -44,7 +44,7 @@ internal class CachedPageEventPublisher<T: Any> {
         let callback1: (EnumeratedSequence<[PageEvent<T>]>.Element?, Int) -> Void = { print("test1 maxEventIndex=\($1) indexedValue: offset=\($0!.offset) value=\($0?.element) \(($0?.element as? PageEvent<T>.Insert<T>)?.loadType)") }
         let callback2: (EnumeratedSequence<[PageEvent<T>]>.Element?, Int) -> Void = { print("test2 maxEventIndex=\($1) indexedValue: offset=\($0!.offset) value=\($0?.element) \(($0?.element as? PageEvent<T>.Insert<T>)?.loadType)") }
         return DownstreamPublisher<T>(sharedForDownstream: getSharedForDownstream, callback1: callback1, callback2: callback2).eraseToAnyPublisher()
-        }
+    }
 
     init(src: AnyPublisher<PageEvent<T>, Never>) {
         self.upstream = src

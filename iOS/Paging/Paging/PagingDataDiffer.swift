@@ -28,7 +28,7 @@ class PagingDataDiffer<T: Any>: ProcessPageEventCallback {
     
     private var lastAccessedIndex: Int = 0
     
-    private var subscriptions = Set<AnyCancellable>()
+    private var pageEventSubscription: AnyCancellable?
     
     private func dispatchLoadStates(_ source: LoadStates, mediator: LoadStates?) {
         combinedLoadStatesCollection.set(
@@ -51,8 +51,10 @@ class PagingDataDiffer<T: Any>: ProcessPageEventCallback {
     func collectFrom(_ pagingData: PagingData<T>) {
         print("collectFrom")
         receiver = pagingData.receiver
+        hintReceiver = pagingData.hintReceiver
+        pageEventSubscription?.cancel()
         
-        pagingData.publisher.sink { event in
+        pageEventSubscription = pagingData.publisher.sink { event in
             print("event: \(event)")
             // TODO 문제있음
             if let event = event as? PageEvent<T>.Insert<T>, event.loadType == LoadType.REFRESH {
@@ -109,7 +111,7 @@ class PagingDataDiffer<T: Any>: ProcessPageEventCallback {
             if event is PageEvent<T>.Insert || event is PageEvent<T>.Drop || event is PageEvent<T>.StaticList {
                 self.onPagesUpdatedListeners.forEach { $0() }
             }
-        }.store(in: &self.subscriptions)
+        }
     }
     
     func get(index: Int) -> T? {
