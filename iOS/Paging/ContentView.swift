@@ -81,9 +81,10 @@ struct MovieTitle: View {
     let onItemClick: () -> Void
 
     var body: some View {
-        VStack {
-            Button(action: onItemClick, label: { Text(title) })
-        }
+        Text(title)
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onItemClick)
     }
 }
 
