@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct ContentView: View {
     @StateObject var viewModel = ContentViewModel(.init(MovieApi.create()))
@@ -13,7 +14,7 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             MovieList(
-                lazyPagingItems: viewModel.$state.map { $0.pagingData }.collectAsLazyPagingItems(),
+                pagingDataPublisher: viewModel.pagingDataPublisher,
                 onItemClick: viewModel.onItemClick
             )
             .navigationBarTitleDisplayMode(.inline)
@@ -23,17 +24,23 @@ struct ContentView: View {
 }
 
 struct MovieList: View {
-    @ObservedObject var lazyPagingItems: LazyPagingItems<Movie>
+    @StateObject private var lazyPagingItems: LazyPagingItems<Movie>
 
     let onItemClick: (Movie?) -> Void
+    
+    init(
+        pagingDataPublisher: AnyPublisher<PagingData<Movie>, Never>,
+        onItemClick: @escaping (Movie?) -> Void
+    ) {
+        _lazyPagingItems = StateObject(wrappedValue: LazyPagingItems(pagingDataPublisher))
+        self.onItemClick = onItemClick
+    }
 
     var body: some View {
         ScrollView {
             LazyVStack {
                 ForEach(0..<lazyPagingItems.itemCount, id: \.self) { index in
-                    let movie = lazyPagingItems.get(index)
-                    MovieItem(movie: movie, onItemClick: onItemClick)
-                        .id(movie?.id ?? index)
+                    MovieItem(movie: lazyPagingItems.get(index), onItemClick: onItemClick)
                 }
                 HStack {
                     if lazyPagingItems.loadState.refresh is LoadState.Loading {
@@ -49,6 +56,9 @@ struct MovieList: View {
             }
         }
         .refreshable(action: lazyPagingItems.refresh)
+        .task {
+            lazyPagingItems.startCollecting()
+        }
     }
 }
 

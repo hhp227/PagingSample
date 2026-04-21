@@ -11,9 +11,11 @@ import SwiftUI
 
 // TODO 버그내용: 하단에 가면 Insert가 너무 많이 호출됨
 public class LazyPagingItems<T : Any>: ObservableObject, DifferCallback {
-    private let publisher: any Publisher<PagingData<T>, Never>
+    private let publisher: AnyPublisher<PagingData<T>, Never>
     
     @Published private(set) var itemSnapshotList = ItemSnapshotList<T>(0, 0, [])
+    
+    private var hasStartedCollection = false
 
     var itemCount: Int {
         get {
@@ -29,10 +31,13 @@ public class LazyPagingItems<T : Any>: ObservableObject, DifferCallback {
     private var subscriptions = Set<AnyCancellable>()
 
     private func updateItemSnapshotList() {
-        DispatchQueue.main.async { // TODO 지울것
+        if Thread.isMainThread {
             self.itemSnapshotList = self.pagingDataDiffer.snapshot()
+        } else {
+            DispatchQueue.main.async {
+                self.itemSnapshotList = self.pagingDataDiffer.snapshot()
+            }
         }
-        
     }
 
     func get(_ index: Int) -> T? {
@@ -60,14 +65,25 @@ public class LazyPagingItems<T : Any>: ObservableObject, DifferCallback {
     )
     
     internal func collectLoadState() {
-        pagingDataDiffer.loadStatePublisher.compactMap { $0 }.assign(to: \.loadState, on: self).store(in: &subscriptions)
+        pagingDataDiffer.loadStatePublisher
+            .compactMap { $0 }
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.loadState, on: self)
+            .store(in: &subscriptions)
     }
     
     internal func collectPagingData() {
-        publisher.eraseToAnyPublisher()
+        publisher
             .buffer(size: 1, prefetch: .keepFull, whenFull: .dropOldest)
             .sink(receiveValue: self.pagingDataDiffer.collectFrom)
             .store(in: &subscriptions)
+    }
+    
+    func startCollecting() {
+        guard !hasStartedCollection else { return }
+        hasStartedCollection = true
+        collectPagingData()
+        collectLoadState()
     }
 
     func onChanged(_ position: Int, _ count: Int) {
@@ -88,8 +104,8 @@ public class LazyPagingItems<T : Any>: ObservableObject, DifferCallback {
         }
     }
 
-    init(_ publisher: any Publisher<PagingData<T>, Never>) {
-        self.publisher = publisher
+    init<P: Publisher>(_ publisher: P) where P.Output == PagingData<T>, P.Failure == Never {
+        self.publisher = publisher.eraseToAnyPublisher()
     }
 }
 
@@ -101,14 +117,8 @@ private let InitialLoadStates = LoadStates(
 
 extension Publisher where Failure == Never {
     func collectAsLazyPagingItems<T>() -> LazyPagingItems<T> where Output == PagingData<T> {
-        @State var lazyPagingItems = LazyPagingItems(self)
-
-        DispatchQueue.main.async {
-            lazyPagingItems.collectPagingData()
-        }
-        DispatchQueue.main.async {
-            lazyPagingItems.collectLoadState()
-        }
+        let lazyPagingItems = LazyPagingItems(self)
+        lazyPagingItems.startCollecting()
         return lazyPagingItems
     }
 }
