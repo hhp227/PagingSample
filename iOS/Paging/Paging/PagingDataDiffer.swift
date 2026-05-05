@@ -51,6 +51,7 @@ class PagingDataDiffer<T: Any>: ProcessPageEventCallback {
     func collectFrom(_ pagingData: PagingData<T>) {
         print("collectFrom")
         receiver = pagingData.receiver
+        hintReceiver = pagingData.hintReceiver
         pageEventSubscription?.cancel()
         
         pageEventSubscription = pagingData.publisher.sink { event in
