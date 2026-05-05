@@ -28,16 +28,22 @@ internal class CachedPageEventPublisher<T: Any> {
         print("getSharedForDownstream")
         let history = self.pageController.getStateAsEvents()
         print("history: \(history)")
-        self.job.store(in: &self.cancellables)
         
         return history.publisher
             .map { Optional($0) }
-            .append(mutableSharedSrc)
+            .append(
+                mutableSharedSrc.handleEvents(
+                    receiveSubscription: { _ in
+                        self.job.store(in: &self.cancellables)
+                    }
+                )
+            )
             .eraseToAnyPublisher()
     }
 
     func close() {
         job.cancel()
+        mutableSharedSrc.send(nil)
     }
     
     var downstreamPublisher: AnyPublisher<PageEvent<T>, Never> {
@@ -103,6 +109,8 @@ struct DownstreamPublisher<T: Any>: Publisher {
         }
 
         func cancel() {
+            cancellable?.cancel()
+            cancellable = nil
             subscriber = nil
         }
     }
