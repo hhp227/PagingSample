@@ -74,7 +74,6 @@ public class LazyPagingItems<T : Any>: ObservableObject, DifferCallback {
     
     internal func collectPagingData() {
         publisher
-            .buffer(size: 1, prefetch: .keepFull, whenFull: .dropOldest)
             .sink(receiveValue: self.pagingDataDiffer.collectFrom)
             .store(in: &subscriptions)
     }
