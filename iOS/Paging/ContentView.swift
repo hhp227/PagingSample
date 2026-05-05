@@ -26,9 +26,11 @@ struct MovieList: View {
     @StateObject var lazyPagingItems: LazyPagingItems<Movie>
 
     let onItemClick: (Movie?) -> Void
+    
+    @State private var isRefreshing = false
 
     var body: some View {
-        ScrollView {
+        /*ScrollView {
             LazyVStack {
                 ForEach(lazyPagingItems) { movie in
                     MovieItem(movie: movie, onItemClick: onItemClick)
@@ -46,7 +48,33 @@ struct MovieList: View {
                 }
             }
         }
-        .refreshable(action: lazyPagingItems.refresh)
+        .refreshable(action: lazyPagingItems.refresh)*/
+        ScrollView { // SwiftUI 순정 ScrollView 사용 (LazyVStack 성능 보존)
+            ZStack {
+                // 이 헬퍼가 UIScrollView를 찾아 RefreshControl을 심어줍니다.
+                RefreshControlHelper(onRefresh: {
+                    lazyPagingItems.refresh()
+                }, isRefreshing: $isRefreshing)
+                
+                LazyVStack(spacing: 0) {
+                    ForEach(lazyPagingItems) { movie in
+                        MovieItem(movie: movie, onItemClick: onItemClick)
+                    }
+                    
+                    HStack {
+                        if lazyPagingItems.loadState.refresh is LoadState.Loading {
+                            Text("LoadingView")
+                        } else if lazyPagingItems.loadState.append is LoadState.Loading {
+                            ProgressView()
+                        } else if lazyPagingItems.loadState.refresh is LoadState.Error {
+                            
+                        } else if lazyPagingItems.loadState.append is LoadState.Error {
+                            
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
