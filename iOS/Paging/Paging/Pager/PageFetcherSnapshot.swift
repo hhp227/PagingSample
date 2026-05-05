@@ -248,6 +248,10 @@ internal class PageFetcherSnapshot<Key: Equatable, Value: Any> {
             while loadKey != nil {
                 let params = loadParams(loadType, loadKey)
                 let result: PagingSource<Key, Value>.LoadResult<Key, Value> = await pagingSource.load(params: params)
+                
+                if currentPagingState().pages.flatMap({ $0.data }).count - params.loadSize != generationalHint.hint.presentedItemsBefore {
+                    break
+                }
                 switch result {
                 case let result as PagingSource<Key, Value>.LoadResult<Key, Value>.Page<Key, Value>:
                     let nextKey: Key?
