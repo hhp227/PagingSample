@@ -26,8 +26,6 @@ struct MovieList: View {
     @StateObject var lazyPagingItems: LazyPagingItems<Movie>
 
     let onItemClick: (Movie?) -> Void
-    
-    @State private var isRefreshing = false
 
     var body: some View {
         /*ScrollView {
@@ -54,7 +52,7 @@ struct MovieList: View {
                 // 이 헬퍼가 UIScrollView를 찾아 RefreshControl을 심어줍니다.
                 RefreshControlHelper(onRefresh: {
                     lazyPagingItems.refresh()
-                }, isRefreshing: $isRefreshing)
+                }, isRefreshing: lazyPagingItems.loadState.refresh is LoadState.Loading)
                 
                 LazyVStack(spacing: 0) {
                     ForEach(lazyPagingItems) { movie in

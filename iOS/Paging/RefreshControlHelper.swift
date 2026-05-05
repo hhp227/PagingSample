@@ -11,10 +11,10 @@ import UIKit
 
 struct RefreshControlHelper: UIViewRepresentable {
     let onRefresh: () -> Void // async 제거 (라이브러리 함수 호출용)
-    @Binding var isRefreshing: Bool
+    let isRefreshing: Bool
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onRefresh: onRefresh, isRefreshing: $isRefreshing)
+        Coordinator(onRefresh: onRefresh)
     }
 
     func makeUIView(context: Context) -> UIView {
@@ -47,17 +47,13 @@ struct RefreshControlHelper: UIViewRepresentable {
 
     class Coordinator: NSObject {
         let onRefresh: () -> Void
-        @Binding var isRefreshing: Bool
 
-        init(onRefresh: @escaping () -> Void, isRefreshing: Binding<Bool>) {
+        init(onRefresh: @escaping () -> Void) {
             self.onRefresh = onRefresh
-            self._isRefreshing = isRefreshing
         }
 
         @objc func handleRefresh(_ sender: UIRefreshControl) {
-            // 1. 상태를 true로 변경
-            isRefreshing = true
-            // 2. 새로고침 함수 실행 (명령 전달)
+            // 새로고침 명령 전달. 표시 상태는 외부 loadState로 제어
             onRefresh()
         }
     }
