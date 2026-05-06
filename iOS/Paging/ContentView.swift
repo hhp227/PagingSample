@@ -46,7 +46,16 @@ struct MovieList: View {
                 }
             }
         }
-        .refreshable(action: lazyPagingItems.refresh)*/
+        .refreshable(action: lazyPagingItems.refresh)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    lazyPagingItems.refresh()
+                }) {
+                    Text("Refresh")
+                }
+            }
+        }*/
         ScrollView { // SwiftUI 순정 ScrollView 사용 (LazyVStack 성능 보존)
             ZStack {
                 // 이 헬퍼가 UIScrollView를 찾아 RefreshControl을 심어줍니다.
@@ -55,16 +64,8 @@ struct MovieList: View {
                 }, isRefreshing: lazyPagingItems.loadState.refresh is LoadState.Loading)
                 
                 LazyVStack(spacing: 0) {
-                    ForEach(0..<lazyPagingItems.itemCount, id: \.self) { index in
-                        MovieItem(
-                            movie: lazyPagingItems.peek(index),
-                            onItemClick: { _ in
-                                onItemClick(lazyPagingItems.peek(index))
-                            }
-                        )
-                        .onAppear {
-                            let _ = lazyPagingItems.get(index)
-                        }
+                    ForEach(lazyPagingItems) { movie in
+                        MovieItem(movie: movie, onItemClick: onItemClick)
                     }
                     
                     HStack {
