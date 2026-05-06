@@ -55,8 +55,16 @@ struct MovieList: View {
                 }, isRefreshing: lazyPagingItems.loadState.refresh is LoadState.Loading)
                 
                 LazyVStack(spacing: 0) {
-                    ForEach(lazyPagingItems) { movie in
-                        MovieItem(movie: movie, onItemClick: onItemClick)
+                    ForEach(0..<lazyPagingItems.itemCount, id: \.self) { index in
+                        MovieItem(
+                            movie: lazyPagingItems.peek(index),
+                            onItemClick: { _ in
+                                onItemClick(lazyPagingItems.peek(index))
+                            }
+                        )
+                        .onAppear {
+                            let _ = lazyPagingItems.get(index)
+                        }
                     }
                     
                     HStack {
