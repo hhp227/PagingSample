@@ -33,6 +33,10 @@ internal class PageFetcherSnapshot<Key: Equatable, Value: Any> {
     
     private let stateHolder: PageFetcherSnapshotState<Key, Value>.Holder<Key, Value>
 
+    private var prependLoadTask: Task<Void, Never>?
+
+    private var appendLoadTask: Task<Void, Never>?
+
     var pageEventPublisher: AnyPublisher<PageEvent<Value>, Never> {
         guard pageEventCollected.compareAndSet(false, true) else {
             fatalError("Attempt to collect twice from pageEventPublisher, which is an illegal operation. Did you " + "forget to call cachedIn()?")
@@ -72,6 +76,8 @@ internal class PageFetcherSnapshot<Key: Equatable, Value: Any> {
     }
     
     func close() {
+        prependLoadTask?.cancel()
+        appendLoadTask?.cancel()
         subscriptions.forEach { $0.cancel() }
         subscriptions.removeAll()
     }
@@ -124,13 +130,27 @@ internal class PageFetcherSnapshot<Key: Equatable, Value: Any> {
         .runningReduce { previous, next in
             next.shouldPrioritizeOver(previous, loadType) ? next : previous
         }
-        .buffer(size: 1, prefetch: .keepFull, whenFull: .dropOldest)
         .sink { generationalHint in
-            Task {
-                await self.doLoad(loadType, generationalHint)
+            switch loadType {
+            case .PREPEND:
+                self.prependLoadTask?.cancel()
+                self.prependLoadTask = self.loadTask(loadType, generationalHint)
+            case .APPEND:
+                self.appendLoadTask?.cancel()
+                self.appendLoadTask = self.loadTask(loadType, generationalHint)
+            case .REFRESH:
+                fatalError("invalid load type for hints")
             }
         }
         .store(in: &subscriptions)
+    }
+
+    private func loadTask(_ loadType: LoadType, _ generationalHint: GenerationalViewportHint) -> Task<Void, Never> {
+        return Task {
+            if !Task.isCancelled {
+                await self.doLoad(loadType, generationalHint)
+            }
+        }
     }
     
     private func loadParams(_ loadType: LoadType, _ key: Key?) -> PagingSource<Key, Value>.LoadParams<Key> {
@@ -248,9 +268,9 @@ internal class PageFetcherSnapshot<Key: Equatable, Value: Any> {
             while loadKey != nil {
                 let params = loadParams(loadType, loadKey)
                 let result: PagingSource<Key, Value>.LoadResult<Key, Value> = await pagingSource.load(params: params)
-                
-                if currentPagingState().pages.flatMap({ $0.data }).count - params.loadSize != generationalHint.hint.presentedItemsBefore {
-                    break
+
+                if Task.isCancelled {
+                    return
                 }
                 switch result {
                 case let result as PagingSource<Key, Value>.LoadResult<Key, Value>.Page<Key, Value>:
