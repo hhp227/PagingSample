@@ -127,9 +127,7 @@ extension ForEach where Data == Range<Int>, ID == Int, Content == AnyView {
     public init<T, ItemContent: View>(_ data: LazyPagingItems<T>, @ViewBuilder content: @escaping (T?) -> ItemContent) {
         print("???? \(data.itemCount)")
         self.init(0..<data.itemCount, id: \.self) { index in
-            AnyView(content(data.peek(index)).onAppear {
-                let _ = data.get(index)
-            })
+            AnyView(content(data.get(index)))
         }
     }
 }
