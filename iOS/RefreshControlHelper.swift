@@ -25,6 +25,8 @@ struct RefreshControlHelper: UIViewRepresentable {
 
     func updateUIView(_ uiView: UIView, context: Context) {
         DispatchQueue.main.async {
+            context.coordinator.onRefresh = onRefresh
+            
             // 부모 UIScrollView 찾기
             guard let scrollView = uiView.ancestor(ofType: UIScrollView.self) else { return }
             
@@ -36,17 +38,16 @@ struct RefreshControlHelper: UIViewRepresentable {
 
             // 라이브러리의 상태(isRefreshing)에 따라 UI 업데이트
             if isRefreshing {
-                if !(scrollView.refreshControl?.isRefreshing ?? false) {
-                    scrollView.refreshControl?.beginRefreshing()
-                }
+                context.coordinator.wasRefreshing = scrollView.refreshControl?.isRefreshing == true
             } else {
-                scrollView.refreshControl?.endRefreshing()
+                context.coordinator.endRefreshingIfNeeded(in: scrollView)
             }
         }
     }
 
     class Coordinator: NSObject {
-        let onRefresh: () -> Void
+        var onRefresh: () -> Void
+        var wasRefreshing = false
 
         init(onRefresh: @escaping () -> Void) {
             self.onRefresh = onRefresh
@@ -55,6 +56,15 @@ struct RefreshControlHelper: UIViewRepresentable {
         @objc func handleRefresh(_ sender: UIRefreshControl) {
             // 새로고침 명령 전달. 표시 상태는 외부 loadState로 제어
             onRefresh()
+        }
+        
+        func endRefreshingIfNeeded(in scrollView: UIScrollView) {
+            guard wasRefreshing || scrollView.refreshControl?.isRefreshing == true else { return }
+            
+            wasRefreshing = false
+            scrollView.layoutIfNeeded()
+            scrollView.refreshControl?.endRefreshing()
+            scrollView.layoutIfNeeded()
         }
     }
 }
