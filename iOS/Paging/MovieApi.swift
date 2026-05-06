@@ -15,7 +15,7 @@ class MovieApi {
         guard let url = URL(string: "\(MovieApi.baseUrl)3/movie/popular?page=\(page)&api_key=\(apiKey)") else {
             fatalError()
         }
-        let (data, response) = try! await URLSession.shared.data(for: URLRequest(url: url))
+        let (data, response) = try await URLSession.shared.data(for: URLRequest(url: url))
         guard let response = response as? HTTPURLResponse, (200..<300).contains(response.statusCode) else {
             fatalError(response.description)
         }
