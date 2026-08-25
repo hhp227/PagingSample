@@ -31,10 +31,10 @@ class ContentPagingSource: PagingSource<Int, Movie> {
     
     override func load(params: PagingSource<Int, Movie>.LoadParams<Int>) async -> PagingSource<Int, Movie>.LoadResult<Int, Movie> {
         let nextPage = params.getKey() ?? 1
-        let movieListResponse = await repository.getPopularMovies(page: nextPage, apiKey: apiKey)
 
         //print("load: \(nextPage), movieListResponse: \(movieListResponse.results.count)")
         do {
+            let movieListResponse = try await repository.getPopularMovies(page: nextPage, apiKey: apiKey)
             try await Task.sleep(nanoseconds: 1_000_000_000)
             return LoadResult<Int, Movie>.Page(
                 data: movieListResponse.results,
@@ -42,6 +42,9 @@ class ContentPagingSource: PagingSource<Int, Movie> {
                 nextKey: movieListResponse.id + 1
             )
         } catch {
+            if Task.isCancelled {
+                return LoadResult<Int, Movie>.Invalid()
+            }
             return LoadResult<Int, Movie>.Error(error: error)
         }
     }

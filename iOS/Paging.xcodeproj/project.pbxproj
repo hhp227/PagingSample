@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0A2AB2EA286A1894005BE496 /* PageFetcherSnapshotState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A2AB2E9286A1894005BE496 /* PageFetcherSnapshotState.swift */; };
+		0A345BF02FABB08F001E0394 /* RefreshControlHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A345BEF2FABB08F001E0394 /* RefreshControlHelper.swift */; };
 		0A42D7642868208C001E78BA /* PageEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A42D7632868208C001E78BA /* PageEvent.swift */; };
 		0A42D76628687A22001E78BA /* PagingConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A42D76528687A22001E78BA /* PagingConfig.swift */; };
 		0A42D76828687BF5001E78BA /* PagingSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A42D76728687BF5001E78BA /* PagingSource.swift */; };
@@ -53,6 +54,7 @@
 
 /* Begin PBXFileReference section */
 		0A2AB2E9286A1894005BE496 /* PageFetcherSnapshotState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageFetcherSnapshotState.swift; sourceTree = "<group>"; };
+		0A345BEF2FABB08F001E0394 /* RefreshControlHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshControlHelper.swift; sourceTree = "<group>"; };
 		0A42D7632868208C001E78BA /* PageEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageEvent.swift; sourceTree = "<group>"; };
 		0A42D76528687A22001E78BA /* PagingConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagingConfig.swift; sourceTree = "<group>"; };
 		0A42D76728687BF5001E78BA /* PagingSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagingSource.swift; sourceTree = "<group>"; };
@@ -169,6 +171,7 @@
 		0A50DB74285E311500780F41 /* Paging */ = {
 			isa = PBXGroup;
 			children = (
+				0A345BEF2FABB08F001E0394 /* RefreshControlHelper.swift */,
 				0A42D76228682004001E78BA /* Pager */,
 				0A65262328681B9E00DDCE70 /* Extension */,
 				0A5B7FF3285EFFDC0087758B /* CombinedLoadStates.swift */,
@@ -290,6 +293,7 @@
 				0A5B7FFF285F35900087758B /* ViewportHint.swift in Sources */,
 				0A50DB6D285E2E5100780F41 /* ContentRepository.swift in Sources */,
 				0A5B7FE6285EDBE50087758B /* PagingData.swift in Sources */,
+				0A345BF02FABB08F001E0394 /* RefreshControlHelper.swift in Sources */,
 				0A50DB6F285E2EB500780F41 /* MovieListResponse.swift in Sources */,
 				0A2AB2EA286A1894005BE496 /* PageFetcherSnapshotState.swift in Sources */,
 				0A50DB73285E30E300780F41 /* MovieApi.swift in Sources */,
